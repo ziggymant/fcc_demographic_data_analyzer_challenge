@@ -24,26 +24,38 @@ def calculate_demographic_data(print_data=True):
     has_higher_education = df['education'].isin(['Bachelors', 'Masters', 'Doctorate']);
     rich = df[df['salary'] == '>50K'].shape[0]
 
-    higher_education = df[(has_higher_education) & (df['salary'] == '>50K')].shape[0]
-    lower_education = df[(~has_higher_education) & (df['salary'] == '>50K')].shape[0]
+    lower_education = df[~has_higher_education].shape[0]
+    lower_education_and_rich = df[(~has_higher_education) & (df['salary'] == '>50K')].shape[0]
+
+    higher_education = df[has_higher_education].shape[0]
+    higher_education_and_rich = df[(has_higher_education) & (df['salary'] == '>50K')].shape[0]
 
     # percentage with salary >50K
-    higher_education_rich = round((higher_education / rich) * 100, 1)
-    lower_education_rich = round((lower_education / rich) * 100, 1)
+    higher_education_rich = round((higher_education_and_rich / higher_education) * 100, 1)
+    lower_education_rich = round((lower_education_and_rich / lower_education) * 100, 1)
 
     # What is the minimum number of hours a person works per week (hours-per-week feature)?
     min_work_hours = df['hours-per-week'].min()
 
     # What percentage of the people who work the minimum number of hours per week have a salary of >50K?
-    num_min_workers = df[(df['hours-per-week'] == min_work_hours) & (df['salary'] == '>50K')].shape[0];
+    num_min_workers = df[df['hours-per-week'] == min_work_hours].shape[0];
+    rich_num_min_workers = df[(df['hours-per-week'] == min_work_hours) & (df['salary'] == '>50K')].shape[0];
 
-    rich_percentage = round((num_min_workers / rich) * 100, 1)
+    rich_percentage = round((rich_num_min_workers / num_min_workers) * 100, 1)
 
-    high_earners = df[df['salary'] == '>50K'].shape[0]
-    high_earners_list = df[df['salary'] == '>50K']['native-country'].value_counts()
+    # What country has the highest percentage of people that earn >50K?
 
-    highest_earning_country = high_earners_list.idxmax()
-    highest_earning_country_percentage = round((high_earners_list[highest_earning_country] / high_earners) * 100, 1)
+    ppl_per_country = df['native-country'].value_counts()
+    ppl_per_country.name = 'population'
+    richt_ppl_per_country = df[df['salary'] == '>50K']['native-country'].value_counts()
+    richt_ppl_per_country.name = 'rich'
+
+    pop_df = pd.concat([ppl_per_country, richt_ppl_per_country], axis=1)
+    pop_df['rich_perc'] = round((pop_df['rich'] /  pop_df['population']) * 100, 1)
+    highest_earners = pop_df.loc[pop_df['rich_perc'].idxmax()]
+
+    highest_earning_country = highest_earners.name
+    highest_earning_country_percentage = highest_earners['rich_perc']
 
     top_indian_prof = df[(df['native-country'] == 'India') & (df['salary'] == '>50K')]['occupation'];
     top_indian_prof_summary = top_indian_prof.value_counts();
